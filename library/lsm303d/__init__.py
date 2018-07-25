@@ -2,18 +2,22 @@ from i2cdevice import Device, Register, BitField
 from i2cdevice.adapter import Adapter, LookupAdapter, U16ByteSwapAdapter
 
 class TemperatureAdapter(Adapter):
+    """
+    Decode the two's compliment, right-justified, 12-bit temperature value.
+    1LSb = 8degC
+    """
     def _encode(self, value):
         return 0
 
     def _decode(self, value):
         output = ((value & 0xFF00) >> 8) | ((value & 0x000F) << 8)
         if output & (1 << 11):
-            output = (output & 0b11111111111) - (1 << 12)
+            output = (output & ((1<<12) -1)) - (1 << 12)
         return output / 8.0
 
 _lsm303d = Device(0x1E, bit_width=8, registers=(
 
-    Register('TEMPERATURE', 0x05, fields=(
+    Register('TEMPERATURE', 0x05 | 0x80, fields=(
         BitField('temperature', 0xFFFF, adapter=TemperatureAdapter()),
     ), bit_width=16),
 
