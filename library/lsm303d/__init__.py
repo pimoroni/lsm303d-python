@@ -1,5 +1,6 @@
-from i2cdevice import Device, Register, BitField
+from i2cdevice import Device, Register, BitField, _int_to_bytes
 from i2cdevice.adapter import Adapter, LookupAdapter, U16ByteSwapAdapter
+import struct
 
 class TemperatureAdapter(Adapter):
     """
@@ -14,6 +15,15 @@ class TemperatureAdapter(Adapter):
         if output & (1 << 11):
             output = (output & ((1<<12) -1)) - (1 << 12)
         return output / 8.0
+
+class S16ByteSwapAdapter(Adapter):
+    def _encode(self, value):
+        b = struct.pack("<h", value)
+        return (b[0] << 8) | b[1]
+
+    def _decode(self, value):
+        b = _int_to_bytes(value, 2)
+        return struct.unpack("<h", b)[0]
 
 class LSM303D:
     def __init__(self, i2c_addr=0x1D, i2c_dev=None):
@@ -38,9 +48,9 @@ class LSM303D:
             )),
 
             Register('MAGNETOMETER', 0x08 | 0x80, fields=(
-                BitField('x', 0xFFFF00000000, adapter=U16ByteSwapAdapter()),
-                BitField('y', 0x0000FFFF0000, adapter=U16ByteSwapAdapter()),
-                BitField('z', 0x00000000FFFF, adapter=U16ByteSwapAdapter()),
+                BitField('x', 0xFFFF00000000, adapter=S16ByteSwapAdapter()),
+                BitField('y', 0x0000FFFF0000, adapter=S16ByteSwapAdapter()),
+                BitField('z', 0x00000000FFFF, adapter=S16ByteSwapAdapter()),
             ), bit_width=8*6),
 
             Register('WHOAMI', 0x0F, fields=(
@@ -74,9 +84,9 @@ class LSM303D:
             ), bit_width=16),
 
             Register('MAGNETOMETER_OFFSET', 0x16 | 0x80, fields=(
-                BitField('x', 0xFFFF00000000, adapter=U16ByteSwapAdapter()),
-                BitField('y', 0x0000FFFF0000, adapter=U16ByteSwapAdapter()),
-                BitField('z', 0x00000000FFFF, adapter=U16ByteSwapAdapter()),
+                BitField('x', 0xFFFF00000000, adapter=S16ByteSwapAdapter()),
+                BitField('y', 0x0000FFFF0000, adapter=S16ByteSwapAdapter()),
+                BitField('z', 0x00000000FFFF, adapter=S16ByteSwapAdapter()),
             ), bit_width=8*6),
 
             Register('HP_ACCELEROMETER_REFERENCE', 0x1c | 0x80, fields=(
@@ -202,9 +212,9 @@ class LSM303D:
 
             # X/Y/Z values from accelerometer
             Register('ACCELEROMETER', 0x28 | 0x80, fields=(
-                BitField('x', 0xFFFF00000000, adapter=U16ByteSwapAdapter()),
-                BitField('y', 0x0000FFFF0000, adapter=U16ByteSwapAdapter()),
-                BitField('z', 0x00000000FFFF, adapter=U16ByteSwapAdapter()),
+                BitField('x', 0xFFFF00000000, adapter=S16ByteSwapAdapter()),
+                BitField('y', 0x0000FFFF0000, adapter=S16ByteSwapAdapter()),
+                BitField('z', 0x00000000FFFF, adapter=S16ByteSwapAdapter()),
             ), bit_width=8*6),
 
             # FIFO control register
@@ -323,6 +333,31 @@ class LSM303D:
 
         self._is_setup = False
 
+        self._accel_full_scale_g = 2
+        self._mag_full_scale_guass = 2
+
+    def set_accel_full_scale_g(self, scale):
+        """Set the full scale range for the accelerometer in g
+
+        :param scale: One of 2, 4, 6, 8 or 16 g
+
+        """
+        self._accel_full_scale_g = scale
+        with self._lsm303d.CONTROL2 as CONTROL2:
+            CONTROL2.set_accel_full_scale_g(self._accel_full_scale_g)
+            CONTROL2.write()
+
+    def set_mag_full_scale_guass(self, scale):
+        """Set the full scale range for the magnetometer in guass
+
+        :param scale: One of 2, 4, 8 or 12 guass
+
+        """
+        self._mag_full_scale_guass = scale
+        with self._lsm303d.CONTROL6 as CONTROL6:
+            CONTROL6.set_mag_full_scale_gauss(scale) # +-2
+            CONTROL6.write()
+
     def setup(self):
         if self._is_setup: return
         self._is_setup = True
@@ -342,9 +377,7 @@ class LSM303D:
             CONTROL1.set_accel_data_rate_hz(50)
             CONTROL1.write()
 
-        with self._lsm303d.CONTROL2 as CONTROL2:
-            CONTROL2.set_accel_full_scale_g(2)
-            CONTROL2.write()
+        self.set_accel_full_scale_g(2)
 
         with self._lsm303d.INTERRUPT1 as INT1:
             INT1.set_enable_fifo_empty(0)
@@ -373,20 +406,37 @@ class LSM303D:
             CONTROL5.set_enable_temperature(1)
             CONTROL5.write()
 
-        with self._lsm303d.CONTROL6 as CONTROL6:
-            CONTROL6.set_mag_full_scale_gauss(2) # +-2
-            CONTROL6.write()
+        self.set_mag_full_scale_guass(2)
+
+        with self._lsm303d.CONTROL7 as CONTROL7:
+            CONTROL7.set_mag_mode('continuous')
+            CONTROL7.write()
 
     def magnetometer(self):
+        """Return magnetometer x, y and z readings.
+
+        These readings are given in guass and should be +/- the given mag_full_scale_guass value.
+
+        """
         self.setup()
         with self._lsm303d.MAGNETOMETER as M:
-            return M.get_x(), M.get_y(), M.get_z()
+            x, y, z = M.get_x(), M.get_y(), M.get_z()
+            x, y, z = [(p/32676.0)*self._mag_full_scale_guass for p in (x, y, z)]
+            return x, y, z
 
     def accelerometer(self):
+        """Return acelerometer x, y and z readings.
+
+        These readings are given in g annd should be +/- the given accel_full_scale_g value.
+
+        """
         self.setup()
         with self._lsm303d.ACCELEROMETER as A:
-            return A.get_x(), A.get_y(), A.get_z()
+            x, y, z = A.get_x(), A.get_y(), A.get_z()
+            x, y, z = [(p/32767.0)*self._accel_full_scale_g for p in (x, y, z)]
+            return x, y, z
 
     def temperature(self):
+        """Return the temperature"""
         self.setup()
         return self._lsm303d.TEMPERATURE.get_temperature() 
