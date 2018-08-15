@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import time
 from lsm303d import LSM303D
 
