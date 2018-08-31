@@ -38,16 +38,16 @@ classifiers = ['Development Status :: 4 - Beta',
                'Topic :: System :: Hardware']
 
 setup(
-    name            = 'lsm303d',
-    version         = '0.0.2',
-    author          = 'Philip Howard',
-    author_email    = 'phil@pimoroni.com',
-    description     = """Python library for the LSM303d accelerometer and magnetometer""",
-    long_description= open('README.rst').read() + open('CHANGELOG.txt').read(),
-    license         = 'MIT',
-    keywords        = 'Raspberry Pi',
-    url             = 'http://www.pimoroni.com',
-    classifiers     = classifiers,
-    packages        = ['lsm303d'],
-    install_requires= [ 'i2cdevice>=0.0.4' ]
+    name='lsm303d',
+    version='0.0.2',
+    author='Philip Howard',
+    author_email='phil@pimoroni.com',
+    description="""Python library for the LSM303d accelerometer and magnetometer""",
+    long_description=open('README.rst').read() + '\n' + open('CHANGELOG.txt').read(),
+    license='MIT',
+    keywords='Raspberry Pi',
+    url='http://www.pimoroni.com',
+    classifiers=classifiers,
+    packages=['lsm303d'],
+    install_requires=['i2cdevice>=0.0.4']
 )
