@@ -1,7 +1,7 @@
 from i2cdevice import Device, Register, BitField, _int_to_bytes
 from i2cdevice.adapter import Adapter, LookupAdapter, U16ByteSwapAdapter
 import struct
-
+import math
 
 class TemperatureAdapter(Adapter):
     """
@@ -337,7 +337,7 @@ class LSM303D:
         self._is_setup = False
 
         self._accel_full_scale_g = 2
-        self._mag_full_scale_guass = 2
+        self._mag_full_scale_gauss = 2
 
     def set_accel_full_scale_g(self, scale):
         """Set the full scale range for the accelerometer in g
@@ -350,13 +350,13 @@ class LSM303D:
             CONTROL2.set_accel_full_scale_g(self._accel_full_scale_g)
             CONTROL2.write()
 
-    def set_mag_full_scale_guass(self, scale):
-        """Set the full scale range for the magnetometer in guass
+    def set_mag_full_scale_gauss(self, scale):
+        """Set the full scale range for the magnetometer in gauss
 
-        :param scale: One of 2, 4, 8 or 12 guass
+        :param scale: One of 2, 4, 8 or 12 gauss
 
         """
-        self._mag_full_scale_guass = scale
+        self._mag_full_scale_gauss = scale
         with self._lsm303d.CONTROL6 as CONTROL6:
             CONTROL6.set_mag_full_scale_gauss(scale)  # +-2
             CONTROL6.write()
@@ -410,7 +410,7 @@ class LSM303D:
             CONTROL5.set_enable_temperature(1)
             CONTROL5.write()
 
-        self.set_mag_full_scale_guass(2)
+        self.set_mag_full_scale_gauss(2)
 
         with self._lsm303d.CONTROL7 as CONTROL7:
             CONTROL7.set_mag_mode('continuous')
@@ -423,9 +423,10 @@ class LSM303D:
 
         """
         self.setup()
+
         with self._lsm303d.MAGNETOMETER as M:
             x, y, z = M.get_x(), M.get_y(), M.get_z()
-            x, y, z = [(p / 32676.0) * self._mag_full_scale_guass for p in (x, y, z)]
+            x, y, z = [(p / 32676.0) * self._mag_full_scale_gauss for p in (x, y, z)]
             return x, y, z
 
     def accelerometer(self):
@@ -435,6 +436,7 @@ class LSM303D:
 
         """
         self.setup()
+
         with self._lsm303d.ACCELEROMETER as A:
             x, y, z = A.get_x(), A.get_y(), A.get_z()
             x, y, z = [(p / 32767.0) * self._accel_full_scale_g for p in (x, y, z)]
@@ -444,3 +446,66 @@ class LSM303D:
         """Return the temperature"""
         self.setup()
         return self._lsm303d.TEMPERATURE.get_temperature()
+
+
+    def raw_heading(self):
+        """Return a raw compass heading calculated from the magnetometer data."""
+
+        X = 0
+        Y = 1
+        Z = 2
+
+        _mag = self.magnetometer()
+        self._heading = math.atan2(_mag[X], _mag[Y])
+
+        if self._heading < 0:
+            self._heading += 2 * math.pi
+
+        if self._heading > 2 * math.pi:
+            self._heading -= 2 * math.pi
+
+        self._heading_degrees = round(math.degrees(self._heading),2)
+
+        return self._heading_degrees
+
+    def heading(self):
+        """Return a tilt compensated heading calculated from the magnetometer data.
+        Returns None in the case of a calculation error.
+        """
+
+        X = 0
+        Y = 1
+        Z = 2
+
+        _mag = self.magnetometer()
+        _acc = self.accelerometer()
+
+        truncate = [0,0,0]
+
+        for i in range(X, Z+1):
+            truncate[i] = math.copysign(min(math.fabs(_acc[i]), 1.0), _acc[i])
+        try:
+            pitch = math.asin(-1 * truncate[X])
+            roll = math.asin(truncate[Y] / math.cos(pitch)) if abs(math.cos(pitch)) >= abs(truncate[Y]) else 0
+            # set roll to zero if pitch approaches -1 or 1
+
+            self._tiltcomp = [0, 0, 0]
+            self._tiltcomp[X] = _mag[X] * math.cos(pitch) + _mag[Z] * math.sin(pitch)
+            self._tiltcomp[Y] = _mag[X] * math.sin(roll) * math.sin(pitch) + \
+                               _mag[Y] * math.cos(roll) - _mag[Z] * math.sin(roll) * math.cos(pitch)
+            self._tiltcomp[Z] = _mag[X] * math.cos(roll) * math.sin(pitch) + \
+                               _mag[Y] * math.sin(roll) + \
+                               _mag[Z] * math.cos(roll) * math.cos(pitch)
+            self._tilt_heading = math.atan2(self._tiltcomp[Y], self._tiltcomp[X])
+
+            if self._tilt_heading < 0:
+                self._tilt_heading += 2 * math.pi
+            if self._tilt_heading > 2 * math.pi:
+                self._heading -= 2 * math.pi
+
+            self._tilt_heading_degrees = round(math.degrees(self._tilt_heading), 2)
+            return self._tilt_heading_degrees
+
+        except Exception as e:
+            print(e)
+            return None
