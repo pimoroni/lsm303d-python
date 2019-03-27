@@ -8,20 +8,19 @@ def raw_heading(minimums, maximums):
     """Return a raw compass heading calculated from the magnetometer data."""
 
     X = 0
-    Y = 1
-    Z = 2
+    Y = 2
+    Z = 1
 
-    mag_range = 0.5
+    mag_range = 2
     mag = list(lsm.magnetometer())
 
     for i in range(len(mag)):
-        mag[i] = (mag_range / (maximums[i] - minimums[i]) * mag[i]) - (mag_range / 2.0)
+        mag[i] = ((mag_range / (maximums[i] - minimums[i])) * mag[i]) - (mag_range / 2.0)
 
-    print(mag[:2])
     heading = math.atan2(mag[Y], mag[X])
 
     if heading < 0:
-        heading += 2 * math.pi
+        heading += (2 * math.pi)
 
     heading_degrees = round(math.degrees(heading), 2)
 
@@ -33,14 +32,14 @@ def heading(minimums, maximums):
     """
 
     X = 0
-    Y = 1
-    Z = 2
+    Y = 2
+    Z = 1
 
-    mag_range = 0.5
+    mag_range = 2
     mag = list(lsm.magnetometer())
 
     for i in range(len(mag)):
-        mag[i] = (mag_range / (maximums[i] - minimums[i]) * mag[i]) - (mag_range / 2.0)
+        mag[i] = ((mag_range / (maximums[i] - minimums[i])) * mag[i]) - (mag_range / 2.0)
 
     acc = lsm.accelerometer()
 
@@ -63,7 +62,7 @@ def heading(minimums, maximums):
         tilt_heading = math.atan2(tiltcomp[Y], tiltcomp[X])
 
         if tilt_heading < 0:
-            tilt_heading += 2 * math.pi
+            tilt_heading += (2 * math.pi)
 
         tilt_heading_degrees = round(math.degrees(tilt_heading), 2)
         return tilt_heading_degrees
@@ -79,7 +78,7 @@ try:
 except NameError:
     pass
 
-input("Press a key to begin calibration and then rotate your LSM303D sensor through every axis of rotation...\n")
+input("Lay your LSM303D in Breakout Garden flat (LSM303D vertical),\n press a key to start, then rotate it 360 degrees, keeping it flat...\n")
 
 t_start = time.time()
 t_elapsed = 0
@@ -102,4 +101,4 @@ while True:
     rh = raw_heading(minimums, maximums)
     h = heading(minimums, maximums)
     print("raw heading: {:0.0f} degrees, compensated heading: {:0.0f} degrees".format(rh, h))
-    time.sleep(0.1)
+    time.sleep(0.5)
