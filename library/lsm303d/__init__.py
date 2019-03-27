@@ -426,11 +426,11 @@ class LSM303D:
 
         with self._lsm303d.MAGNETOMETER as M:
             x, y, z = M.get_x(), M.get_y(), M.get_z()
-            x, y, z = [(p / 32676.0) * self._mag_full_scale_gauss for p in (x, y, z)]
+            x, y, z = [(p / 32767.0) * self._mag_full_scale_gauss for p in (x, y, z)]
             return x, y, z
 
     def accelerometer(self):
-        """Return acelerometer x, y and z readings.
+        """Return accelerometer x, y and z readings.
 
         These readings are given in g annd should be +/- the given accel_full_scale_g value.
 
@@ -446,66 +446,3 @@ class LSM303D:
         """Return the temperature"""
         self.setup()
         return self._lsm303d.TEMPERATURE.get_temperature()
-
-
-    def raw_heading(self):
-        """Return a raw compass heading calculated from the magnetometer data."""
-
-        X = 0
-        Y = 1
-        Z = 2
-
-        _mag = self.magnetometer()
-        self._heading = math.atan2(_mag[X], _mag[Y])
-
-        if self._heading < 0:
-            self._heading += 2 * math.pi
-
-        if self._heading > 2 * math.pi:
-            self._heading -= 2 * math.pi
-
-        self._heading_degrees = round(math.degrees(self._heading),2)
-
-        return self._heading_degrees
-
-    def heading(self):
-        """Return a tilt compensated heading calculated from the magnetometer data.
-        Returns None in the case of a calculation error.
-        """
-
-        X = 0
-        Y = 1
-        Z = 2
-
-        _mag = self.magnetometer()
-        _acc = self.accelerometer()
-
-        truncate = [0,0,0]
-
-        for i in range(X, Z+1):
-            truncate[i] = math.copysign(min(math.fabs(_acc[i]), 1.0), _acc[i])
-        try:
-            pitch = math.asin(-1 * truncate[X])
-            roll = math.asin(truncate[Y] / math.cos(pitch)) if abs(math.cos(pitch)) >= abs(truncate[Y]) else 0
-            # set roll to zero if pitch approaches -1 or 1
-
-            self._tiltcomp = [0, 0, 0]
-            self._tiltcomp[X] = _mag[X] * math.cos(pitch) + _mag[Z] * math.sin(pitch)
-            self._tiltcomp[Y] = _mag[X] * math.sin(roll) * math.sin(pitch) + \
-                               _mag[Y] * math.cos(roll) - _mag[Z] * math.sin(roll) * math.cos(pitch)
-            self._tiltcomp[Z] = _mag[X] * math.cos(roll) * math.sin(pitch) + \
-                               _mag[Y] * math.sin(roll) + \
-                               _mag[Z] * math.cos(roll) * math.cos(pitch)
-            self._tilt_heading = math.atan2(self._tiltcomp[Y], self._tiltcomp[X])
-
-            if self._tilt_heading < 0:
-                self._tilt_heading += 2 * math.pi
-            if self._tilt_heading > 2 * math.pi:
-                self._heading -= 2 * math.pi
-
-            self._tilt_heading_degrees = round(math.degrees(self._tilt_heading), 2)
-            return self._tilt_heading_degrees
-
-        except Exception as e:
-            print(e)
-            return None
