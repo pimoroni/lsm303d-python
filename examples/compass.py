@@ -4,7 +4,7 @@ import time
 import math
 from lsm303d import LSM303D
 
-def raw_heading(minimums, maximums):
+def raw_heading(minimums, maximums, zero=0):
     """Return a raw compass heading calculated from the magnetometer data."""
 
     X = 0
@@ -22,11 +22,11 @@ def raw_heading(minimums, maximums):
     if heading < 0:
         heading += (2 * math.pi)
 
-    heading_degrees = round(math.degrees(heading), 2)
+    heading_degrees = (round(math.degrees(heading), 2) - zero) % 360
 
     return heading_degrees
 
-def heading(minimums, maximums):
+def heading(minimums, maximums, zero=0):
     """Return a tilt compensated heading calculated from the magnetometer data.
     Returns None in the case of a calculation error.
     """
@@ -64,7 +64,7 @@ def heading(minimums, maximums):
         if tilt_heading < 0:
             tilt_heading += (2 * math.pi)
 
-        tilt_heading_degrees = round(math.degrees(tilt_heading), 2)
+        tilt_heading_degrees = (round(math.degrees(tilt_heading), 2) - zero) % 360
         return tilt_heading_degrees
 
     except Exception as e:
@@ -78,7 +78,7 @@ try:
 except NameError:
     pass
 
-input("Lay your LSM303D in Breakout Garden flat (LSM303D vertical),\n press a key to start, then rotate it 360 degrees, keeping it flat...\n")
+input("Lay your LSM303D in Breakout Garden flat (LSM303D vertical), \npress a key to start, then rotate it 360 degrees, keeping it flat...\n")
 
 t_start = time.time()
 t_elapsed = 0
@@ -95,10 +95,14 @@ while t_elapsed < 30:
             maximums[i] = mag[i]
     t_elapsed = time.time() - t_start
 
-input("Calibration complete! Press a key to continue...\n")
+input("Calibration complete!\n\nIf you want to set a zero (North) point, then turn your \nbreakout to that point and press a key...\n")
+
+zero = raw_heading(minimums, maximums)
+
+input("Press a key to begin readings!\n")
 
 while True:
-    rh = raw_heading(minimums, maximums)
-    h = heading(minimums, maximums)
-    print("raw heading: {:0.0f} degrees, compensated heading: {:0.0f} degrees".format(rh, h))
-    time.sleep(0.5)
+    rh = raw_heading(minimums, maximums, zero=zero)
+    h = heading(minimums, maximums, zero=zero)
+    print("raw heading: {:0.0f} degrees, tilt-compensated heading: {:0.0f} degrees".format(rh, h))
+    time.sleep(0.1)
