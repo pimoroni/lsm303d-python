@@ -4,18 +4,19 @@ import time
 import math
 from lsm303d import LSM303D
 
+
 def raw_heading(minimums, maximums, zero=0):
     """Return a raw compass heading calculated from the magnetometer data."""
 
     X = 0
-    Y = 2
-    Z = 1
+    Y = 2  # Change to 1 if you have the breakout flat
 
     mag_range = 2
     mag = list(lsm.magnetometer())
 
     for i in range(len(mag)):
-        mag[i] = ((mag_range / (maximums[i] - minimums[i])) * mag[i]) - (mag_range / 2.0)
+        mag[i] = ((mag_range / (maximums[i] - minimums[i])) * mag[i]) - \
+                 (mag_range / 2.0)
 
     heading = math.atan2(mag[Y], mag[X])
 
@@ -26,59 +27,16 @@ def raw_heading(minimums, maximums, zero=0):
 
     return heading_degrees
 
-def heading(minimums, maximums, zero=0):
-    """Return a tilt compensated heading calculated from the magnetometer data.
-    Returns None in the case of a calculation error.
-    """
 
-    X = 0
-    Y = 2
-    Z = 1
-
-    mag_range = 2
-    mag = list(lsm.magnetometer())
-
-    for i in range(len(mag)):
-        mag[i] = ((mag_range / (maximums[i] - minimums[i])) * mag[i]) - (mag_range / 2.0)
-
-    acc = lsm.accelerometer()
-
-    truncate = [0,0,0]
-
-    for i in range(X, Z+1):
-        truncate[i] = math.copysign(min(math.fabs(acc[i]), 1.0), acc[i])
-    try:
-        pitch = math.asin(-1 * truncate[X])
-        roll = math.asin(truncate[Y] / math.cos(pitch)) if abs(math.cos(pitch)) >= abs(truncate[Y]) else 0
-        # set roll to zero if pitch approaches -1 or 1
-
-        tiltcomp = [0, 0, 0]
-        tiltcomp[X] = mag[X] * math.cos(pitch) + mag[Z] * math.sin(pitch)
-        tiltcomp[Y] = mag[X] * math.sin(roll) * math.sin(pitch) + \
-                      mag[Y] * math.cos(roll) - mag[Z] * math.sin(roll) * math.cos(pitch)
-        tiltcomp[Z] = mag[X] * math.cos(roll) * math.sin(pitch) + \
-                      mag[Y] * math.sin(roll) + \
-                      mag[Z] * math.cos(roll) * math.cos(pitch)
-        tilt_heading = math.atan2(tiltcomp[Y], tiltcomp[X])
-
-        if tilt_heading < 0:
-            tilt_heading += (2 * math.pi)
-
-        tilt_heading_degrees = (round(math.degrees(tilt_heading), 2) - zero) % 360
-        return tilt_heading_degrees
-
-    except Exception as e:
-        print(e)
-        return None
-
-lsm = LSM303D(0x1d) # Change to 0x1e if you have soldered the address jumper
+lsm = LSM303D(0x1d)  # Change to 0x1e if you have soldered the address jumper
 
 try:
     input = raw_input
 except NameError:
     pass
 
-input("Lay your LSM303D in Breakout Garden flat (LSM303D vertical), \npress a key to start, then rotate it 360 degrees, keeping it flat...\n")
+input("Lay your LSM303D in Breakout Garden flat (LSM303D vertical), \n\
+press a key to start, then rotate it 360 degrees, keeping it flat...\n")
 
 t_start = time.time()
 t_elapsed = 0
@@ -95,7 +53,8 @@ while t_elapsed < 30:
             maximums[i] = mag[i]
     t_elapsed = time.time() - t_start
 
-input("Calibration complete!\n\nIf you want to set a zero (North) point, then turn your \nbreakout to that point and press a key...\n")
+input("Calibration complete!\n\nIf you want to set a zero (North) point, \n\
+then turn your breakout to that point and press a key...\n")
 
 zero = raw_heading(minimums, maximums)
 
@@ -103,6 +62,5 @@ input("Press a key to begin readings!\n")
 
 while True:
     rh = raw_heading(minimums, maximums, zero=zero)
-    h = heading(minimums, maximums, zero=zero)
-    print("raw heading: {:0.0f} degrees, tilt-compensated heading: {:0.0f} degrees".format(rh, h))
+    print("compass heading: {:0.0f} degrees".format(rh, h))
     time.sleep(0.1)
