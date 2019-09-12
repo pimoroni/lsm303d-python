@@ -62,7 +62,7 @@ class LSM303D:
 
             Register('MAGNETOMETER_INTERRUPT', 0x12, fields=(
                 BitField('enable', 0b00000001),
-                BitField('4d', 0b00000010),
+                BitField('enable_4d', 0b00000010),
                 BitField('latch', 0b00000100),
                 BitField('polarity', 0b00001000),    # 0 = active-low, 1 = active-high
                 BitField('pin_config', 0b00010000),  # 0 = push-pull, 1 = open-drain
@@ -241,7 +241,7 @@ class LSM303D:
             Register('IG_CONFIG1', 0x30 | 0x80, fields=(
                 # 0x30
                 BitField('and_or_combination', 1 << 31),
-                BitField('6d_enable', 1 << 30),
+                BitField('enable_6d', 1 << 30),
                 BitField('z_high_enable', 1 << 29),
                 BitField('z_low_enable', 1 << 28),
                 BitField('y_high_enable', 1 << 27),
@@ -270,7 +270,7 @@ class LSM303D:
             Register('IG_CONFIG1', 0x30 | 0x80, fields=(
                 # 0x34
                 BitField('and_or_combination', 1 << 31),
-                BitField('6d_enable', 1 << 30),
+                BitField('enable_6d', 1 << 30),
                 BitField('z_high_enable', 1 << 29),
                 BitField('z_low_enable', 1 << 28),
                 BitField('y_high_enable', 1 << 27),
