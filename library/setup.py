@@ -39,7 +39,7 @@ classifiers = ['Development Status :: 4 - Beta',
 
 setup(
     name='lsm303d',
-    version='0.0.4',
+    version='0.0.5',
     author='Philip Howard',
     author_email='phil@pimoroni.com',
     description="""Python library for the LSM303d accelerometer and magnetometer""",
@@ -49,5 +49,5 @@ setup(
     url='http://www.pimoroni.com',
     classifiers=classifiers,
     packages=['lsm303d'],
-    install_requires=['i2cdevice>=0.0.4']
+    install_requires=['i2cdevice>=0.0.6']
 )

@@ -3,7 +3,7 @@ from i2cdevice.adapter import Adapter, LookupAdapter, U16ByteSwapAdapter
 import struct
 
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 
 class TemperatureAdapter(Adapter):
