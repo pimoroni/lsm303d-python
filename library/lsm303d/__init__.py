@@ -3,6 +3,9 @@ from i2cdevice.adapter import Adapter, LookupAdapter, U16ByteSwapAdapter
 import struct
 
 
+__version__ = '0.0.3'
+
+
 class TemperatureAdapter(Adapter):
     """
     Decode the two's compliment, right-justified, 12-bit temperature value.

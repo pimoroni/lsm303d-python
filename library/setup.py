@@ -39,7 +39,7 @@ classifiers = ['Development Status :: 4 - Beta',
 
 setup(
     name='lsm303d',
-    version='0.0.2',
+    version='0.0.3',
     author='Philip Howard',
     author_email='phil@pimoroni.com',
     description="""Python library for the LSM303d accelerometer and magnetometer""",

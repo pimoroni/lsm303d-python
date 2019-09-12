@@ -1,0 +1,4 @@
+0.0.3
+-----
+
+* BugFix: fix for compatibility with i2cdevice>=0.0.6
