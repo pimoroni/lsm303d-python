@@ -3,7 +3,7 @@ from i2cdevice.adapter import Adapter, LookupAdapter, U16ByteSwapAdapter
 import struct
 
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 
 class TemperatureAdapter(Adapter):
@@ -370,7 +370,7 @@ class LSM303D:
         try:
             chip = self._lsm303d.get('WHOAMI')
             if chip.id != 0x49:
-                raise RuntimeError("Unable to find lsm303d on 0x{:02x}, WHOAMI returned {:02x}".format(self._i2c_addr, chip.id)
+                raise RuntimeError("Unable to find lsm303d on 0x{:02x}, WHOAMI returned {:02x}".format(self._i2c_addr, chip.id))
         except IOError:
             raise RuntimeError("Unable to find lsm303d on 0x{:02x}, IOError".format(self._i2c_addr))
 
@@ -408,7 +408,7 @@ class LSM303D:
 
         self.set_mag_full_scale_guass(2)
 
-        with self._lsm303d.set('CONTROL7', mag_mode='continuous')
+        self._lsm303d.set('CONTROL7', mag_mode='continuous')
 
     def magnetometer(self):
         """Return magnetometer x, y and z readings.
@@ -430,7 +430,7 @@ class LSM303D:
         """
         self.setup()
         accel = self._lsm303d.get('ACCELEROMETER')
-        x, y, z = mag.x, mag.y, mag.z
+        x, y, z = accel.x, accel.y, accel.z
         x, y, z = [(p / 32767.0) * self._accel_full_scale_g for p in (x, y, z)]
         return x, y, z
 
