@@ -349,9 +349,7 @@ class LSM303D:
 
         """
         self._accel_full_scale_g = scale
-        with self._lsm303d.CONTROL2 as CONTROL2:
-            CONTROL2.set_accel_full_scale_g(self._accel_full_scale_g)
-            CONTROL2.write()
+        self._lsm303d.set('CONTROL2', accel_full_scale_g=self._accel_full_scale_g)
 
     def set_mag_full_scale_guass(self, scale):
         """Set the full scale range for the magnetometer in guass
@@ -360,9 +358,7 @@ class LSM303D:
 
         """
         self._mag_full_scale_guass = scale
-        with self._lsm303d.CONTROL6 as CONTROL6:
-            CONTROL6.set_mag_full_scale_gauss(scale)  # +-2
-            CONTROL6.write()
+        self._lsm303d.set('CONTROL6', mag_full_scale_gauss=scale)  # +-2
 
     def setup(self):
         if self._is_setup:
@@ -372,52 +368,47 @@ class LSM303D:
         self._lsm303d.select_address(self._i2c_addr)
 
         try:
-            if self._lsm303d.WHOAMI.get_id() != 0x49:
-                raise RuntimeError("Unable to find lsm303d on 0x{:02x}, WHOAMI returned {:02x}".format(self._i2c_addr, self._lsm303d.WHOAMI.get_id()))
+            chip = self._lsm303d.get('WHOAMI')
+            if chip.id != 0x49:
+                raise RuntimeError("Unable to find lsm303d on 0x{:02x}, WHOAMI returned {:02x}".format(self._i2c_addr, chip.id)
         except IOError:
             raise RuntimeError("Unable to find lsm303d on 0x{:02x}, IOError".format(self._i2c_addr))
 
-        with self._lsm303d.CONTROL1 as CONTROL1:
-            CONTROL1.set_accel_x_enable(1)
-            CONTROL1.set_accel_y_enable(1)
-            CONTROL1.set_accel_z_enable(1)
-            CONTROL1.set_accel_data_rate_hz(50)
-            CONTROL1.write()
+        self._lsm303d.set('CONTROL1',
+                          accel_x_enable=1,
+                          accel_y_enable=1,
+                          accel_z_enable=1,
+                          accel_data_rate_hz=50)
 
         self.set_accel_full_scale_g(2)
 
-        with self._lsm303d.INTERRUPT1 as INT1:
-            INT1.set_enable_fifo_empty(0)
-            INT1.set_enable_accel_dataready(0)
-            INT1.set_enable_accelerometer(0)
-            INT1.set_enable_magnetometer(0)
-            INT1.set_enable_ig2(0)
-            INT1.set_enable_ig1(0)
-            INT1.set_enable_click(0)
-            INT1.set_enable_boot(0)
-            INT1.write()
+        self._lsm303d.set('INTERRUPT1',
+                          enable_fifo_empty=0,
+                          enable_accel_dataready=0,
+                          enable_accelerometer=0,
+                          enable_magnetometer=0,
+                          enable_ig2=0,
+                          enable_ig1=0,
+                          enable_click=0,
+                          enable_boot=0)
 
-        with self._lsm303d.INTERRUPT2 as INT2:
-            INT2.set_enable_fifo(0)
-            INT2.set_enable_fifo_overrun(0)
-            INT2.set_enable_mag_dataready(0)
-            INT2.set_enable_accel_dataready(0)
-            INT2.set_enable_magnetometer(0)
-            INT2.set_enable_ig2(0)
-            INT2.set_enable_ig1(0)
-            INT2.set_enable_click(0)
-            INT2.write()
+        self._lsm303d.set('INTERRUPT2',
+                          enable_fifo=0,
+                          enable_fifo_overrun=0,
+                          enable_mag_dataready=0,
+                          enable_accel_dataready=0,
+                          enable_magnetometer=0,
+                          enable_ig2=0,
+                          enable_ig1=0,
+                          enable_click=0)
 
-        with self._lsm303d.CONTROL5 as CONTROL5:
-            CONTROL5.set_mag_data_rate_hz(50)
-            CONTROL5.set_enable_temperature(1)
-            CONTROL5.write()
+        self._lsm303d.set('CONTROL5',
+                          mag_data_rate_hz=50,
+                          enable_temperature=1)
 
         self.set_mag_full_scale_guass(2)
 
-        with self._lsm303d.CONTROL7 as CONTROL7:
-            CONTROL7.set_mag_mode('continuous')
-            CONTROL7.write()
+        with self._lsm303d.set('CONTROL7', mag_mode='continuous')
 
     def magnetometer(self):
         """Return magnetometer x, y and z readings.
@@ -426,10 +417,10 @@ class LSM303D:
 
         """
         self.setup()
-        with self._lsm303d.MAGNETOMETER as M:
-            x, y, z = M.get_x(), M.get_y(), M.get_z()
-            x, y, z = [(p / 32676.0) * self._mag_full_scale_guass for p in (x, y, z)]
-            return x, y, z
+        mag = self._lsm303d.get('MAGNETOMETER')
+        x, y, z = mag.x, mag.y, mag.z
+        x, y, z = [(p / 32676.0) * self._mag_full_scale_guass for p in (x, y, z)]
+        return x, y, z
 
     def accelerometer(self):
         """Return acelerometer x, y and z readings.
@@ -438,12 +429,12 @@ class LSM303D:
 
         """
         self.setup()
-        with self._lsm303d.ACCELEROMETER as A:
-            x, y, z = A.get_x(), A.get_y(), A.get_z()
-            x, y, z = [(p / 32767.0) * self._accel_full_scale_g for p in (x, y, z)]
-            return x, y, z
+        accel = self._lsm303d.get('ACCELEROMETER')
+        x, y, z = mag.x, mag.y, mag.z
+        x, y, z = [(p / 32767.0) * self._accel_full_scale_g for p in (x, y, z)]
+        return x, y, z
 
     def temperature(self):
         """Return the temperature"""
         self.setup()
-        return self._lsm303d.TEMPERATURE.get_temperature()
+        return self._lsm303d.get('TEMPERATURE').temperature
