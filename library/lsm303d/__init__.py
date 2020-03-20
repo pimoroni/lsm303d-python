@@ -419,7 +419,7 @@ class LSM303D:
         self.setup()
         mag = self._lsm303d.get('MAGNETOMETER')
         x, y, z = mag.x, mag.y, mag.z
-        x, y, z = [(p / 32676.0) * self._mag_full_scale_guass for p in (x, y, z)]
+        x, y, z = [(p / 32767.0) * self._mag_full_scale_guass for p in (x, y, z)]
         return x, y, z
 
     def accelerometer(self):
