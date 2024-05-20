@@ -340,7 +340,7 @@ class LSM303D:
         self._is_setup = False
 
         self._accel_full_scale_g = 2
-        self._mag_full_scale_guass = 2
+        self._mag_full_scale_gauss = 2
 
     def set_accel_full_scale_g(self, scale):
         """Set the full scale range for the accelerometer in g
@@ -351,14 +351,16 @@ class LSM303D:
         self._accel_full_scale_g = scale
         self._lsm303d.set('CONTROL2', accel_full_scale_g=self._accel_full_scale_g)
 
-    def set_mag_full_scale_guass(self, scale):
-        """Set the full scale range for the magnetometer in guass
+    def set_mag_full_scale_gauss(self, scale):
+        """Set the full scale range for the magnetometer in gauss
 
-        :param scale: One of 2, 4, 8 or 12 guass
+        :param scale: One of 2, 4, 8 or 12 gauss
 
         """
-        self._mag_full_scale_guass = scale
+        self._mag_full_scale_gauss = scale
         self._lsm303d.set('CONTROL6', mag_full_scale_gauss=scale)  # +-2
+
+    set_mag_full_scale_guass = set_mag_full_scale_gauss
 
     def setup(self):
         if self._is_setup:
@@ -406,26 +408,26 @@ class LSM303D:
                           mag_data_rate_hz=50,
                           enable_temperature=1)
 
-        self.set_mag_full_scale_guass(2)
+        self.set_mag_full_scale_gauss(2)
 
         self._lsm303d.set('CONTROL7', mag_mode='continuous')
 
     def magnetometer(self):
         """Return magnetometer x, y and z readings.
 
-        These readings are given in guass and should be +/- the given mag_full_scale_guass value.
+        These readings are given in gauss and should be +/- the given mag_full_scale_gauss value.
 
         """
         self.setup()
         mag = self._lsm303d.get('MAGNETOMETER')
         x, y, z = mag.x, mag.y, mag.z
-        x, y, z = [(p / 32767.0) * self._mag_full_scale_guass for p in (x, y, z)]
+        x, y, z = [(p / 32767.0) * self._mag_full_scale_gauss for p in (x, y, z)]
         return x, y, z
 
     def accelerometer(self):
-        """Return acelerometer x, y and z readings.
+        """Return accelerometer x, y and z readings.
 
-        These readings are given in g annd should be +/- the given accel_full_scale_g value.
+        These readings are given in g and should be +/- the given accel_full_scale_g value.
 
         """
         self.setup()
