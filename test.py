@@ -1,4 +1,5 @@
 import time
+
 from lsm303d import LSM303D
 
 lsm = LSM303D(0x1e)
