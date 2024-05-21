@@ -320,7 +320,7 @@ class LSM303D:
                 BitField("y", 1 << 33),
                 BitField("x", 1 << 32),
                 # 0x3A
-                BitField("threshod", 0xFF << 24),
+                BitField("threshold", 0xFF << 24),
                 # 0x3B
                 BitField("time_limit", 0xFF << 16),
                 # 0x3C
