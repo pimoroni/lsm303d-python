@@ -1,3 +1,10 @@
+1.0.0
+-----
+
+* Port to hatch/pyproject.toml
+* Require i2cdevice>=1.0.0
+* Fix typo in CLICK register "threshold" option
+
 0.0.5
 -----
 
