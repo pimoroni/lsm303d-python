@@ -372,9 +372,9 @@ class LSM303D:
         try:
             chip = self._lsm303d.get("WHOAMI")
             if chip.id != 0x49:
-                raise RuntimeError("Unable to find lsm303d on 0x{:02x}, WHOAMI returned {:02x}".format(self._i2c_addr, chip.id))
-        except IOError:
-            raise RuntimeError("Unable to find lsm303d on 0x{:02x}, IOError".format(self._i2c_addr))
+                raise RuntimeError(f"Unable to find lsm303d on 0x{self._i2c_addr:02x}, WHOAMI returned {chip.id:02x}")
+        except OSError:
+            raise RuntimeError(f"Unable to find lsm303d on 0x{self._i2c_addr:02x}, IOError") from None
 
         self._lsm303d.set("CONTROL1",
                           accel_x_enable=1,
