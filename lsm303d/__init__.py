@@ -1,9 +1,13 @@
 import struct
+from importlib.metadata import PackageNotFoundError, version
 
 from i2cdevice import BitField, Device, Register, _int_to_bytes
 from i2cdevice.adapter import Adapter, LookupAdapter, U16ByteSwapAdapter
 
-__version__ = "1.0.0"
+try:
+    __version__ = version("lsm303d")
+except PackageNotFoundError:
+    __version__ = "0.0.0"
 
 
 class TemperatureAdapter(Adapter):
